@@ -1,0 +1,35 @@
+version: '3'
+services:
+
+  php:
+    build:
+      context: php
+    volumes:
+      - ./../../:/var/www
+    depends_on:
+      - mysql
+      - pgsql
+
+  mysql:
+    image: mysql:8.0
+    volumes:
+      - ./volumes/mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD:
+      MYSQL_DATABASE: "${DB_NAME}"
+      MYSQL_USER: "${DB_USER}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+    ports:
+      - 33065:3306
+
+  pgsql:
+    image: postgres:12-alpine
+    volumes:
+      - ./volumes/pgsql:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    ports:
+      - 54325:5432
