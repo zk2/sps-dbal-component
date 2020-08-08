@@ -142,3 +142,25 @@ We can pass it to our SpsCountry class as:
     $sps = new SpsCountry($connection);
     $sps->init($decodedRequest['filter'], $decodedRequest['sort']);
     $data = $sps->getResult($decodedRequest['navigation']['page'], $decodedRequest['navigation']['itemsOnPage']);
+
+It will make pseudo-SQL like this
+
+.. code-block:: sql
+
+    SELECT __sps_alias__.* FROM (
+        SELECT country.id AS id,
+            country.name AS country_name,
+            continent.name AS continent_name,
+            region.name AS region_name,
+            capital.name AS capital_name,
+            COUNT(city.id) AS city_cnt
+        FROM country country
+        LEFT JOIN continent continent ON country.continent_id = continent.id
+        LEFT JOIN region region ON country.region_id = region.id
+        LEFT JOIN city capital ON country.capital_city_id = capital.id
+        LEFT JOIN city city ON city.country_id = country.id
+        WHERE (lower(region.name)  IN(:region_name_1)
+            and (capital.last_date  BETWEEN :capital_last_date_3_0 AND :capital_last_date_3_1 or lower(country.name)  LIKE :country_name_4 ))
+        GROUP BY country.id, continent.id, region.id, capital.id
+    ) __sps_alias__
+    WHERE city_cnt  > :countcity_id_4 LIMIT 20
