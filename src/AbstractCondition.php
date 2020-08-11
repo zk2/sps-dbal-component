@@ -91,7 +91,7 @@ abstract class AbstractCondition
         return $this;
     }
 
-    abstract public function buildWhere(bool $forAlias = false): ?string;
+    abstract public function buildWhere(bool $external = false): ?string;
 
     abstract public function getParameters(): array;
 

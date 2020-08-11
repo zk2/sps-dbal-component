@@ -23,11 +23,11 @@ class Condition extends AbstractCondition
         parent::__construct($sequentialNumber, $data);
     }
 
-    public function buildWhere(bool $forAlias = false): ?string
+    public function buildWhere(bool $external = false): ?string
     {
         $where = '';
         foreach ($this->rules as $rule) {
-            $where .= $rule->buildWhere($forAlias);
+            $where .= $rule->buildWhere($external);
         }
         $where = $this->trimAndOr($where);
 

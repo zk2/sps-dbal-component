@@ -15,22 +15,21 @@ use Doctrine\DBAL\Query\QueryBuilder;
 
 abstract class AbstractSps
 {
-    const STR_LOVER = [
-        'sql_function' => 'lower({property})',
-        'php_function' => 'strtolower',
-    ];
-
     protected QueryBuilder $queryBuilder;
 
     protected AbstractCondition $condition;
 
-    protected array $aliases = [];
+    protected array $selectPart = []; // alias => field
+
+    protected array $allowedFilterFields = [];
+
+    protected array $allowedSortFields = [];
 
     protected ?array $filterOptions = null;
 
-    protected ?array $sortFields = null;
-
     protected array $sortCondition = [];
+
+    protected array $lowerFields = []; // processing this fields by lower SQL function and strtolower PHP function
 
     protected string $platformName;
 
@@ -43,12 +42,15 @@ abstract class AbstractSps
     public function init(array $filters, array $sortFields = []): self
     {
         $this->initQueryBuilder();
-        $this->applyFilterOptions($filters);
         $selectPart = $this->queryBuilder->getQueryPart('select');
         foreach ($selectPart as $property) {
             $fieldAndAlias = AbstractCondition::extractFieldAndAlias($property);
-            $this->aliases[$fieldAndAlias['alias']] = $property;
+            $this->selectPart[$fieldAndAlias['alias']] = $fieldAndAlias['field'];
         }
+        $this->allowedFilterFields = $this->allowedSortFields = array_keys($this->selectPart);
+        $this->customize();
+
+        $this->applyFilterOptions($filters);
         $this->buildCondition($filters);
         $this->buildSortCondition($sortFields);
 
@@ -58,9 +60,8 @@ abstract class AbstractSps
     public function help(): array
     {
         return [
-            'allowed_filters' => $this->getFilteredFields(),
-            'allowed_comparison_operators' => array_keys(Rule::COMPARISON_OPERATORS),
-            'allowed_sort' => $this->getSortedFields(),
+            'allowed_filters' => $this->allowedFilterFields,
+            'allowed_sort' => $this->allowedSortFields,
         ];
     }
 
@@ -120,31 +121,25 @@ abstract class AbstractSps
         return $data;
     }
 
-    protected function getFilteredFields(): array
+    # Add/remove filter/sort fields. Also define lowerFields and custom sql/php functions for processing
+    protected function customize(): void
     {
-        return $this->filterOptions ? array_keys($this->filterOptions) : $this->aliases;
     }
 
-    protected function getSortedFields(): array
+    protected function isAllowedFilterField(string $field): bool
     {
-        return $this->sortFields ?: $this->aliases;
+        return in_array($field, $this->allowedFilterFields);
+    }
+
+    protected function isAllowedSortField(string $field): bool
+    {
+        return in_array($field, $this->allowedSortFields);
     }
 
     protected function buildCondition(array $filters): void
     {
-        array_walk_recursive(
-            $filters,
-            function (&$val, $key) {
-                if ('property' === $key) {
-                    if (!isset($this->aliases[$val])) {
-                        throw new SpsException(sprintf('Filter "%s" does not exists', $val));
-                    }
-                    $val = $this->aliases[$val];
-                }
-            }
-        );
         $this->condition = AbstractCondition::create($filters);
-        $this->aliases = array_keys($this->aliases);
+        $this->selectPart = array_keys($this->selectPart);
     }
 
     protected function buildSortCondition(array $sortFields): void
@@ -154,8 +149,8 @@ abstract class AbstractSps
                 $sortField = [$sortField];
             }
             $field = array_shift($sortField);
-            if (!in_array($field, $this->getSortedFields())) {
-                throw new SpsException(sprintf('Sort field "%s" does not exists', $field));
+            if (!$this->isAllowedSortField($field)) {
+                throw new SpsException(sprintf('Sort by "%s" does not allowed', $field));
             }
             $direction = array_shift($sortField);
             $direction = $direction ? strtolower($direction) : 'asc';
@@ -178,12 +173,21 @@ abstract class AbstractSps
 
     protected function applyFilterOptions(array &$filters): void
     {
-        if (null === $this->filterOptions) {
-            return;
-        }
         foreach ($filters as $key => &$filter) {
-            if ('condition' === $key && isset($this->filterOptions[$filter['property']])) {
-                $filter = array_merge($filter, $this->filterOptions[$filter['property']]);
+            if (isset($filter['property'])) {
+                if (!$this->isAllowedFilterField($filter['property'])) {
+                    throw new SpsException(sprintf('Filter by "%s" does not allowed', $filter['property']));
+                }
+                if (in_array($filter['property'], $this->lowerFields)) {
+                    $filter['sql_function'] = function (string $field, Rule $rule) {
+                        return sprintf('lower(%s) %s', $field, $rule->prepareOperatorAndParameter());
+                    };
+                    $filter['php_function'] = 'strtolower';
+                }
+                $filter['internal_field'] = $this->selectPart[$filter['property']] ?? null;
+                if (isset($this->filterOptions[$filter['property']])) {
+                    $filter = array_merge($filter, $this->filterOptions[$filter['property']]);
+                }
             } elseif (is_array($filter)) {
                 $this->applyFilterOptions($filter);
             }

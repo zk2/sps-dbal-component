@@ -12,25 +12,11 @@ You need to make Sps class extends Zk2\SpsDbalComponent\AbstractSps:
 
     class SpsCountry extends AbstractSps
     {
-        // optional :: define options for filter. If not defined - it will be `$this->queryBuilder->getQueryPart('select')`
-        protected ?array $filterOptions = [
-            'id' => [],
-            'country_name' => self::STR_LOVER,
-            'continent_name' => self::STR_LOVER,
-            'region_name' => self::STR_LOVER,
-            'capital_name' => self::STR_LOVER,
-            'city_cnt' => ['aggregated' => true],
-        ];
-
-        // optional :: define fields, which can be ordered. If not defined - it will be `$this->queryBuilder->getQueryPart('select')`
-        protected ?array $sortFields = [
-            'id',
-            'country_name',
-            'continent_name',
-            'region_name',
-            'capital_name',
-            'city_cnt',
-        ];
+        protected function customize(): void
+        {
+            // define city_cnt as aggregated value
+            $this->filterOptions['city_cnt']['aggregated'] = true;
+        }
 
         // define Query Builder
         // !!! IMPORTANT !!! EACH field in SELECT part should be single element in array
@@ -85,10 +71,7 @@ Imagine we are getting the following request:
               "condition": {
                 "property": "region_name",
                 "comparison_operator": "in",
-                "value": [
-                  "south america",
-                  "australia and new zealand"
-                ]
+                "value": ["south america", "australia and new zealand"]
               }
             },
             {
@@ -99,10 +82,7 @@ Imagine we are getting the following request:
                   "condition": {
                     "property": "capital_last_date",
                     "comparison_operator": "between",
-                    "value": [
-                      "1987-05-09",
-                      "2000-01-01"
-                    ]
+                    "value": ["1987-05-09", "2000-01-01"]
                   }
                 },
                 {
