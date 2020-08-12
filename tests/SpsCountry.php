@@ -7,7 +7,7 @@ use Zk2\SpsDbalComponent\AbstractSps;
 
 class SpsCountry extends AbstractSps
 {
-    protected function customize(): void
+    protected function preprocessing(array &$filters, array &$sort): void
     {
         $this->lowerFields = [
             'country_name',
@@ -18,9 +18,9 @@ class SpsCountry extends AbstractSps
         $this->filterOptions['city_cnt']['aggregated'] = true;
     }
 
-    protected function initQueryBuilder(): QueryBuilder
+    public function initQueryBuilder(): self
     {
-        return $this->queryBuilder
+        $this->queryBuilder
             ->resetQueryParts()
             ->select([
                 'country.id AS id',
@@ -40,5 +40,7 @@ class SpsCountry extends AbstractSps
             ->addGroupBy('continent.id')
             ->addGroupBy('region.id')
             ->addGroupBy('capital.id');
+
+        return $this;
     }
 }

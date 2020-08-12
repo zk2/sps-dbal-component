@@ -25,7 +25,7 @@ abstract class AbstractSps
 
     protected array $allowedSortFields = [];
 
-    protected ?array $filterOptions = null;
+    protected array $filterOptions = [];
 
     protected array $sortCondition = [];
 
@@ -39,20 +39,23 @@ abstract class AbstractSps
         $this->queryBuilder = $connection->createQueryBuilder();
     }
 
-    public function init(array $filters, array $sortFields = []): self
+    abstract public function initQueryBuilder(): self;
+
+    public function initSps(array $filters, array $sort = []): self
     {
-        $this->initQueryBuilder();
-        $selectPart = $this->queryBuilder->getQueryPart('select');
-        foreach ($selectPart as $property) {
+        if (!$this->queryBuilder->getQueryPart('select')) {
+            $this->initQueryBuilder();
+        }
+        foreach ($this->queryBuilder->getQueryPart('select') as $property) {
             $fieldAndAlias = AbstractCondition::extractFieldAndAlias($property);
             $this->selectPart[$fieldAndAlias['alias']] = $fieldAndAlias['field'];
         }
-        $this->allowedFilterFields = $this->allowedSortFields = array_keys($this->selectPart);
-        $this->customize();
-
-        $this->applyFilterOptions($filters);
+        $this->allowedSortFields = array_keys($this->selectPart);
+        $this->allowedFilterFields = array_fill_keys(array_keys($this->selectPart), ['operators' => array_keys(Rule::COMPARISON_OPERATORS)]);
+        $this->preprocessing($filters, $sort);
+        $this->buildFilters($filters);
         $this->buildCondition($filters);
-        $this->buildSortCondition($sortFields);
+        $this->buildSortCondition($sort);
 
         return $this;
     }
@@ -121,14 +124,18 @@ abstract class AbstractSps
         return $data;
     }
 
-    # Add/remove filter/sort fields. Also define lowerFields and custom sql/php functions for processing
-    protected function customize(): void
+    /**
+     * There is place for some validation input data
+     * Also add/remove allowed filter/sort fields.
+     * Also define lowerFields and custom sql/php functions for processing
+     */
+    protected function preprocessing(array &$filters, array &$sort): void
     {
     }
 
     protected function isAllowedFilterField(string $field): bool
     {
-        return in_array($field, $this->allowedFilterFields);
+        return isset($this->allowedFilterFields[$field]);
     }
 
     protected function isAllowedSortField(string $field): bool
@@ -157,6 +164,9 @@ abstract class AbstractSps
             if (!in_array($direction, ['asc', 'desc'])) {
                 throw new SpsException(sprintf('Wrong sort direction "%s"', $direction));
             }
+            if (in_array($field, $this->lowerFields)) {
+                $field = sprintf('lower(%s)', $field);
+            }
             $this->sortCondition[$field] = $direction;
         }
     }
@@ -166,30 +176,36 @@ abstract class AbstractSps
         switch ($this->platformName) {
             case 'oracle':
             case 'postgresql':
-                $direction .= ('asc' === $direction ? ' NULLS FIRST' : ' NULLS LAST');
+                $direction .= ('asc' === $direction ? ' nulls first' : ' nulls last');
         }
         $this->queryBuilder->addOrderBy($field, $direction);
     }
 
-    protected function applyFilterOptions(array &$filters): void
+    protected function buildFilters(array &$filters): void
     {
-        foreach ($filters as $key => &$filter) {
+        foreach ($filters as &$filter) {
             if (isset($filter['property'])) {
                 if (!$this->isAllowedFilterField($filter['property'])) {
                     throw new SpsException(sprintf('Filter by "%s" does not allowed', $filter['property']));
                 }
+                if (!in_array($filter['comparison_operator'], $this->allowedFilterFields[$filter['property']]['operators'])) {
+                    throw new SpsException(sprintf('ComparisonOperator "%s" by "%s" does not allowed', $filter['comparison_operator'], $filter['property']));
+                }
+                $filter['name'] = $filter['property'];
                 if (in_array($filter['property'], $this->lowerFields)) {
                     $filter['sql_function'] = function (string $field, Rule $rule) {
                         return sprintf('lower(%s) %s', $field, $rule->prepareOperatorAndParameter());
                     };
                     $filter['php_function'] = 'strtolower';
                 }
-                $filter['internal_field'] = $this->selectPart[$filter['property']] ?? null;
+                if (isset($this->selectPart[$filter['property']])) {
+                    $filter['internal_expression'] = $this->selectPart[$filter['property']];
+                }
                 if (isset($this->filterOptions[$filter['property']])) {
                     $filter = array_merge($filter, $this->filterOptions[$filter['property']]);
                 }
             } elseif (is_array($filter)) {
-                $this->applyFilterOptions($filter);
+                $this->buildFilters($filter);
             }
         }
     }
@@ -200,8 +216,6 @@ abstract class AbstractSps
 
         return $where ? $this->condition->trimAndOr($where) : null;
     }
-
-    abstract protected function initQueryBuilder(): QueryBuilder;
 
     /**
      * Infers type of a given value, returning a compatible constant:

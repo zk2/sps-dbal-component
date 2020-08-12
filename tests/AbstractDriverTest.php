@@ -61,7 +61,7 @@ abstract class AbstractDriverTest extends TestCase
     public function testQueryTest(array $filter, ?array $sort = null, int $page = 1, int $itemsOnPage = 50, ?bool $navigation = true, ?bool $totalCount = false)
     {
         $sps = new SpsCountry($this->queryBuilder->getConnection());
-        $data = $sps->init($filter, $sort)->getResult($page, $itemsOnPage, $navigation, $totalCount);
+        $data = $sps->initSps($filter, $sort)->getResult($page, $itemsOnPage, $navigation, $totalCount);
         $this->assertArrayHasKey('navigation', $data);
         $this->assertArrayHasKey('data', $data);
     }

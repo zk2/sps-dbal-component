@@ -10,66 +10,13 @@
 
 namespace Zk2\SpsDbalComponent;
 
-class Rule extends AbstractCondition
+class Rule extends AbstractCondition implements RuleInterface
 {
-    const EQUALS = '=';
-    const NOT_EQUALS = '!=';
-    const GREATER_THAN = '>';
-    const GREATER_THAN_OR_EQUAL = '>=';
-    const LESS_THAN = '<';
-    const LESS_THAN_OR_EQUAL = '<=';
-    const IS_NULL = 'IS NULL';
-    const IS_NOT_NULL = 'IS NOT NULL';
-    const IN = 'IN';
-    const NOT_IN = 'NOT IN';
-    const LIKE = 'LIKE';
-    const NOT_LIKE = 'NOT LIKE';
-    const BETWEEN = 'BETWEEN';
-    const NOT_BETWEEN = 'NOT BETWEEN';
+    private ?string $name = null;
 
-    const TOKEN_EQUALS = 'equals';
-    const TOKEN_NOT_EQUALS = 'not_equals';
-    const TOKEN_GREATER_THAN = 'greater_than';
-    const TOKEN_GREATER_THAN_OR_EQUAL = 'greater_than_or_equal';
-    const TOKEN_LESS_THAN = 'less_than';
-    const TOKEN_LESS_THAN_OR_EQUAL = 'less_than_or_equal';
-    const TOKEN_IS_NULL = 'is_null';
-    const TOKEN_IS_NOT_NULL = 'is_not_null';
-    const TOKEN_IN = 'in';
-    const TOKEN_NOT_IN = 'not_in';
-    const TOKEN_BEGINS_WITH = 'begins_with';
-    const TOKEN_ENDS_WITH = 'ends_with';
-    const TOKEN_CONTAINS = 'contains';
-    const TOKEN_NOT_BEGINS_WITH = 'not_begins_with';
-    const TOKEN_NOT_ENDS_WITH = 'not_ends_with';
-    const TOKEN_NOT_CONTAINS = 'not_contains';
-    const TOKEN_BETWEEN = 'between';
-    const TOKEN_NOT_BETWEEN = 'not_between';
+    private ?string $internalExpression = null;
 
-    const COMPARISON_OPERATORS = [
-        self::TOKEN_EQUALS => self::EQUALS,
-        self::TOKEN_NOT_EQUALS => self::NOT_EQUALS,
-        self::TOKEN_GREATER_THAN => self::GREATER_THAN,
-        self::TOKEN_GREATER_THAN_OR_EQUAL => self::GREATER_THAN_OR_EQUAL,
-        self::TOKEN_LESS_THAN => self::LESS_THAN,
-        self::TOKEN_LESS_THAN_OR_EQUAL => self::LESS_THAN_OR_EQUAL,
-        self::TOKEN_IS_NULL => self::IS_NULL,
-        self::TOKEN_IS_NOT_NULL => self::IS_NOT_NULL,
-        self::TOKEN_IN => self::IN,
-        self::TOKEN_NOT_IN => self::NOT_IN,
-        self::TOKEN_BEGINS_WITH => self::LIKE,
-        self::TOKEN_ENDS_WITH => self::LIKE,
-        self::TOKEN_CONTAINS => self::LIKE,
-        self::TOKEN_NOT_BEGINS_WITH => self::NOT_LIKE,
-        self::TOKEN_NOT_ENDS_WITH => self::NOT_LIKE,
-        self::TOKEN_NOT_CONTAINS => self::NOT_LIKE,
-        self::TOKEN_BETWEEN => self::BETWEEN,
-        self::TOKEN_NOT_BETWEEN => self::NOT_BETWEEN,
-    ];
-
-    private ?string $internalField = null;
-
-    private ?string $alias = null;
+    private ?string $externalExpression = null;
 
     private ?string $comparisonOperator = null;
 
@@ -77,6 +24,8 @@ class Rule extends AbstractCondition
     private $value = null;
 
     private bool $isAggregated = false;
+
+    private bool $valuesAlreadyPrepared = false;
 
     private ?\Closure $sqlFunctionBuilder = null;
 
@@ -87,26 +36,30 @@ class Rule extends AbstractCondition
 
     public function buildWhere(bool $external = false): ?string
     {
-        if ((null === $this->internalField && null === $this->alias) || (!$external && $this->isAggregated)) {
+        if ((null === $this->internalExpression && null === $this->externalExpression) || (!$external && $this->isAggregated)) {
             return null;
         }
 
-        $field = $external ? $this->alias : $this->internalField;
+        $expression = $external ? $this->externalExpression : $this->internalExpression;
+
+        if (!$expression) {
+            return null;
+        }
 
         if ($this->sqlFunctionBuilder) {
-            return $this->applySqlFunction($field);
+            return $this->applySqlFunction($expression);
         }
 
         if (in_array($this->comparisonOperator, [self::TOKEN_IS_NULL, self::TOKEN_IS_NOT_NULL])) {
             $this->parameters = [];
-            return sprintf('%s %s %s ', $this->boolOperator, $field, $this->extractComparisonOperator());
+            return sprintf('%s %s %s ', $this->boolOperator, $expression, $this->extractComparisonOperator());
         }
 
         if (null === $this->value) {
             return null;
         }
 
-        return sprintf('%s %s %s ', $this->boolOperator, $field, $this->prepareOperatorAndParameter());
+        return sprintf('%s %s %s ', $this->boolOperator, $expression, $this->prepareOperatorAndParameter());
     }
 
     public function getParameters(): array
@@ -147,12 +100,23 @@ class Rule extends AbstractCondition
         return $this->value;
     }
 
+    public function getBaseParameterName(): string
+    {
+        return ':'.preg_replace('/[\W]/', '', $this->externalExpression).'_'.$this->sequentialNumber;
+    }
+
+    public function extractComparisonOperator(): string
+    {
+        return self::COMPARISON_OPERATORS[$this->comparisonOperator];
+    }
+
     protected function init(array $data)
     {
         $data = $data['condition'] ?? $data;
 
-        $this->setInternalField($data['internal_field'] ?? null)
-            ->setAlias($data['property'] ?? null)
+        $this->name = $data['property'] ?? null;
+        $this->setInternalExpression($data['internal_expression'] ?? null)
+            ->setExternalExpression($data['external_expression'] ?? ($data['property'] ?? null))
             ->setComparisonOperator($data['comparison_operator'] ?? null)
             ->setValue($data['value'] ?? null)
             ->setPhpFunction($data['php_function'] ?? null)
@@ -175,7 +139,7 @@ class Rule extends AbstractCondition
             }
         }
 
-        $parameterName = strtolower(':'.str_replace(['(', ')', '"', ',', ':', '.'], ['', '', '', '_', '_', '_'], $this->internalField).'_'.$this->sequentialNumber);
+        $parameterName = $this->getBaseParameterName();
 
         if (in_array($this->comparisonOperator, [self::TOKEN_BETWEEN, self::TOKEN_NOT_BETWEEN])) {
             if (!is_array($this->value) || 2 !== count($this->value)) {
@@ -191,19 +155,19 @@ class Rule extends AbstractCondition
         }
     }
 
-    private function setInternalField(?string $internalField): self
+    private function setInternalExpression(?string $expression): self
     {
-        if (null !== $internalField) {
-            $this->internalField = $internalField;
+        if (null !== $expression) {
+            $this->internalExpression = $expression;
         }
 
         return $this;
     }
 
-    private function setAlias(?string $alias): self
+    private function setExternalExpression(?string $expression): self
     {
-        if (null !== $alias) {
-            $this->alias = $alias;
+        if (null !== $expression) {
+            $this->externalExpression = $expression;
         }
 
         return $this;
@@ -257,36 +221,29 @@ class Rule extends AbstractCondition
         return $this;
     }
 
-    private function extractComparisonOperator(): string
-    {
-        return self::COMPARISON_OPERATORS[$this->comparisonOperator];
-    }
-
     private function prepareValues(): void
     {
+        if ($this->valuesAlreadyPrepared) {
+            return;
+        }
         switch ($this->comparisonOperator) {
             case self::TOKEN_BEGINS_WITH:
             case self::TOKEN_NOT_BEGINS_WITH:
-                $this->parameters = array_map(function ($val) {
-                    return "$val%";
-                }, $this->parameters);
-                return;
+                $this->parameters = array_map(fn($val) => "$val%", $this->parameters);
+                break;
             case self::TOKEN_ENDS_WITH:
             case self::TOKEN_NOT_ENDS_WITH:
-                $this->parameters = array_map(function ($val) {
-                    return "%$val";
-                }, $this->parameters);
-                return;
+                $this->parameters = array_map(fn($val) => "%$val", $this->parameters);
+                break;
             case self::TOKEN_CONTAINS:
             case self::TOKEN_NOT_CONTAINS:
-                $this->parameters = array_map(function ($val) {
-                    return "%$val%";
-                }, $this->parameters);
-                return;
+                $this->parameters = array_map(fn($val) => "%$val%", $this->parameters);
+                break;
         }
+        $this->valuesAlreadyPrepared = true;
     }
 
-    private function applySqlFunction(string $field): string
+    private function applySqlFunction(?string $field): string
     {
         $sql = call_user_func_array($this->sqlFunctionBuilder, ['field' => $field, 'rule' => $this]);
 
