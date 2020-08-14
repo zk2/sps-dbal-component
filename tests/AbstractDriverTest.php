@@ -63,7 +63,7 @@ abstract class AbstractDriverTest extends TestCase
         $sps = new SpsCountry($this->queryBuilder->getConnection());
         $data = $sps->initSps($filter, $sort)->getResult($page, $itemsOnPage, $navigation, $totalCount);
         $this->assertArrayHasKey('navigation', $data);
-        $this->assertArrayHasKey('data', $data);
+        $this->assertArrayHasKey('result', $data);
     }
 
     public function dataProvider()
@@ -74,7 +74,7 @@ abstract class AbstractDriverTest extends TestCase
                     'bool_operator' => null,
                     'condition' => [
                         'property' => 'region_name',
-                        'comparison_operator' => 'in',
+                        'operator' => 'in',
                         'value' => ['south america', 'australia and new zealand'],
                     ],
                 ],
@@ -85,7 +85,7 @@ abstract class AbstractDriverTest extends TestCase
                             'bool_operator' => null,
                             'condition' => [
                                 'property' => 'capital_last_date',
-                                'comparison_operator' => 'between',
+                                'operator' => 'between',
                                 'value' => ['1987-05-09', '2000-01-01'],
                             ],
                         ],
@@ -93,7 +93,7 @@ abstract class AbstractDriverTest extends TestCase
                             'bool_operator' => 'or',
                             'condition' => [
                                 'property' => 'country_name',
-                                'comparison_operator' => 'contains',
+                                'operator' => 'contains',
                                 'value' => 'islands',
                             ],
                         ],
@@ -106,7 +106,7 @@ abstract class AbstractDriverTest extends TestCase
                             'bool_operator' => null,
                             'condition' => [
                                 'property' => 'city_cnt',
-                                'comparison_operator' => 'greater_than',
+                                'operator' => 'greater_than',
                                 'value' => 3,
                             ],
                         ],

@@ -19,7 +19,7 @@ abstract class AbstractSps
 
     protected AbstractCondition $condition;
 
-    protected array $selectPart = []; // alias => field
+    protected array $selectPart = []; // alias => expression
 
     protected array $allowedFilterFields = [];
 
@@ -116,7 +116,7 @@ abstract class AbstractSps
                 $result['navigation']['total_items'] = $count;
                 $result['navigation']['total_pages'] = (int) ceil($count / $itemsOnPage);
             }
-            $result['data'] = $data;
+            $result['result'] = $data;
 
             return $result;
         }
@@ -146,7 +146,6 @@ abstract class AbstractSps
     protected function buildCondition(array $filters): void
     {
         $this->condition = AbstractCondition::create($filters);
-        $this->selectPart = array_keys($this->selectPart);
     }
 
     protected function buildSortCondition(array $sortFields): void
@@ -163,6 +162,9 @@ abstract class AbstractSps
             $direction = $direction ? strtolower($direction) : 'asc';
             if (!in_array($direction, ['asc', 'desc'])) {
                 throw new SpsException(sprintf('Wrong sort direction "%s"', $direction));
+            }
+            if (!$this->condition->isAggregated()) {
+                $field = $this->selectPart[$field];
             }
             if (in_array($field, $this->lowerFields)) {
                 $field = sprintf('lower(%s)', $field);
@@ -188,8 +190,8 @@ abstract class AbstractSps
                 if (!$this->isAllowedFilterField($filter['property'])) {
                     throw new SpsException(sprintf('Filter by "%s" does not allowed', $filter['property']));
                 }
-                if (!in_array($filter['comparison_operator'], $this->allowedFilterFields[$filter['property']]['operators'])) {
-                    throw new SpsException(sprintf('ComparisonOperator "%s" by "%s" does not allowed', $filter['comparison_operator'], $filter['property']));
+                if (!in_array($filter['operator'], $this->allowedFilterFields[$filter['property']]['operators'])) {
+                    throw new SpsException(sprintf('ComparisonOperator "%s" by "%s" does not allowed', $filter['operator'], $filter['property']));
                 }
                 $filter['name'] = $filter['property'];
                 if (in_array($filter['property'], $this->lowerFields)) {

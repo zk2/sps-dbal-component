@@ -117,7 +117,7 @@ class Rule extends AbstractCondition implements RuleInterface
         $this->name = $data['property'] ?? null;
         $this->setInternalExpression($data['internal_expression'] ?? null)
             ->setExternalExpression($data['external_expression'] ?? ($data['property'] ?? null))
-            ->setComparisonOperator($data['comparison_operator'] ?? null)
+            ->setComparisonOperator($data['operator'] ?? null)
             ->setValue($data['value'] ?? null)
             ->setPhpFunction($data['php_function'] ?? null)
             ->setSqlFunction($data['sql_function'] ?? null)
