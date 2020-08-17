@@ -101,6 +101,7 @@ abstract class AbstractSps
                 'items_per_page' => $itemsOnPage,
                 'page' => $page,
                 'more' => $more,
+                'items_on_page' => count($data),
             ];
             if ($totalCount) {
                 if (1 !== $page || $more) {
