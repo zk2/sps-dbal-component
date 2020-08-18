@@ -155,9 +155,9 @@ abstract class AbstractSps
             if (!is_array($sortField)) {
                 $sortField = [$sortField];
             }
-            $field = array_shift($sortField);
-            if (!$this->isAllowedSortField($field)) {
-                throw new SpsException(sprintf('Sort by "%s" does not allowed', $field));
+            $fieldName = $field = array_shift($sortField);
+            if (!$this->isAllowedSortField($fieldName)) {
+                throw new SpsException(sprintf('Sort by "%s" does not allowed', $fieldName));
             }
             $direction = array_shift($sortField);
             $direction = $direction ? strtolower($direction) : 'asc';
@@ -167,7 +167,7 @@ abstract class AbstractSps
             if (!$this->condition->isAggregated()) {
                 $field = $this->selectPart[$field];
             }
-            if (in_array($field, $this->lowerFields)) {
+            if (in_array($fieldName, $this->lowerFields)) {
                 $field = sprintf('lower(%s)', $field);
             }
             $this->sortCondition[$field] = $direction;
