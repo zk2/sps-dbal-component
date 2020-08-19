@@ -105,12 +105,7 @@ abstract class AbstractSps
             ];
             if ($totalCount) {
                 if (1 !== $page || $more) {
-                    $sql = $this->queryBuilder->resetQueryParts(['orderBy'])->setFirstResult(null)->setMaxResults(null)->getSQL();
-                    $stmt = $this->queryBuilder->resetQueryParts()
-                        ->select('count(*)')
-                        ->from(sprintf('(%s)', $sql), '__sps_alias__')
-                        ->execute();
-                    $count = $stmt->fetchColumn();
+                    $count = $this->getTotalCount();
                 } else {
                     $count = count($data);
                 }
@@ -123,6 +118,17 @@ abstract class AbstractSps
         }
 
         return $data;
+    }
+
+    protected function getTotalCount(): int
+    {
+        $sql = $this->queryBuilder->resetQueryParts(['orderBy'])->setFirstResult(null)->setMaxResults(null)->getSQL();
+        $stmt = $this->queryBuilder->resetQueryParts()
+            ->select('count(*)')
+            ->from(sprintf('(%s)', $sql), '__sps_alias__')
+            ->execute();
+
+        return  $stmt->fetchColumn();
     }
 
     /**
