@@ -82,6 +82,9 @@ class Rule extends AbstractCondition implements RuleInterface
             case self::TOKEN_IN:
             case self::TOKEN_NOT_IN:
                 return sprintf(' %s(%s)', $this->extractComparisonOperator(), key($this->parameters));
+            case self::TOKEN_IS_NULL:
+            case self::TOKEN_IS_NOT_NULL:
+                return sprintf(' %s', $this->extractComparisonOperator());
             default:
                 return sprintf(' %s %s', $this->extractComparisonOperator(), key($this->parameters));
         }
