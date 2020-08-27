@@ -91,4 +91,9 @@ interface RuleInterface
         self::TOKEN_IN,
         self::TOKEN_NOT_IN,
     ];
+
+    const BETWEEN_OPERATORS = [
+        self::TOKEN_BETWEEN,
+        self::TOKEN_NOT_BETWEEN,
+    ];
 }
