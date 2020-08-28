@@ -21,9 +21,9 @@ abstract class AbstractSps
 
     protected array $selectPart = []; // alias => expression
 
-    protected array $allowedFilterFields = [];
+    protected ?array $allowedFilterFields = null;
 
-    protected array $allowedSortFields = [];
+    protected ?array $allowedSortFields = null;
 
     protected array $filterOptions = [];
 
@@ -50,9 +50,13 @@ abstract class AbstractSps
             $fieldAndAlias = AbstractCondition::extractFieldAndAlias($property);
             $this->selectPart[$fieldAndAlias['alias']] = $fieldAndAlias['field'];
         }
-        $this->allowedSortFields = array_keys($this->selectPart);
-        $this->allowedFilterFields = array_fill_keys(array_keys($this->selectPart), ['operators' => array_keys(Rule::COMPARISON_OPERATORS)]);
         $this->preprocessing($filters, $sort);
+        if (null === $this->allowedSortFields) {
+            $this->allowedSortFields = array_keys($this->selectPart);
+        }
+        if (null === $this->allowedFilterFields) {
+            $this->allowedFilterFields = array_fill_keys(array_keys($this->selectPart), ['operators' => array_keys(Rule::COMPARISON_OPERATORS)]);
+        }
         $this->buildFilters($filters);
         $this->buildCondition($filters);
         $this->buildSortCondition($sort);
