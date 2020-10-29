@@ -70,7 +70,7 @@ Imagine we are getting the following request:
               "bool_operator": null,
               "condition": {
                 "property": "region_name",
-                "comparison_operator": "in",
+                "operator": "in",
                 "value": ["south america", "australia and new zealand"]
               }
             },
@@ -81,7 +81,7 @@ Imagine we are getting the following request:
                   "bool_operator": null,
                   "condition": {
                     "property": "capital_last_date",
-                    "comparison_operator": "between",
+                    "operator": "between",
                     "value": ["1987-05-09", "2000-01-01"]
                   }
                 },
@@ -89,7 +89,7 @@ Imagine we are getting the following request:
                   "bool_operator": "or",
                   "condition": {
                     "property": "country_name",
-                    "comparison_operator": "contains",
+                    "operator": "contains",
                     "value": "islands"
                   }
                 }
@@ -102,7 +102,7 @@ Imagine we are getting the following request:
                   "bool_operator": null,
                   "condition": {
                     "property": "city_cnt",
-                    "comparison_operator": "greater_than",
+                    "operator": "greater_than",
                     "value": 3
                   }
                 }
