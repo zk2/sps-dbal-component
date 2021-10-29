@@ -3,7 +3,7 @@
 namespace Tests;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\PDOSqlite\Driver;
+use Doctrine\DBAL\Driver\PDO\SQLite\Driver;
 use Doctrine\DBAL\Query\QueryBuilder;
 
 class SqliteDriverTest extends AbstractDriverTest

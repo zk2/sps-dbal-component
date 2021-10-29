@@ -2,7 +2,6 @@
 
 namespace Tests;
 
-use Doctrine\DBAL\Query\QueryBuilder;
 use Zk2\SpsDbalComponent\AbstractSps;
 
 class SpsCountry extends AbstractSps

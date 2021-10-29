@@ -1,3 +1,4 @@
 /vendor/
 /tests/logs/
 /tests/docker/volumes/
+/.phpunit.result.cache

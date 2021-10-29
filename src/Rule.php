@@ -72,7 +72,7 @@ class Rule extends AbstractCondition implements RuleInterface
         return $this->isAggregated;
     }
 
-    public function prepareOperatorAndParameter()
+    public function prepareOperatorAndParameter(): string
     {
         $this->prepareValues();
         switch ($this->comparisonOperator) {

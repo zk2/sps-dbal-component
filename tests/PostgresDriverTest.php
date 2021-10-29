@@ -3,7 +3,7 @@
 namespace Tests;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\PDOPgSql\Driver;
+use Doctrine\DBAL\Driver\PDO\PgSQL\Driver;
 use Doctrine\DBAL\Query\QueryBuilder;
 
 class PostgresDriverTest extends AbstractDriverTest

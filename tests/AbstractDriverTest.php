@@ -52,7 +52,7 @@ abstract class AbstractDriverTest extends TestCase
 
     public function testConnectionTest()
     {
-        $this->assertEquals('Hello', $this->connection->executeQuery("SELECT 'Hello'")->fetchColumn());
+        $this->assertEquals('Hello', $this->connection->executeQuery("SELECT 'Hello'")->fetchOne());
     }
 
     /**
@@ -66,7 +66,7 @@ abstract class AbstractDriverTest extends TestCase
         $this->assertArrayHasKey('result', $data);
     }
 
-    public function dataProvider()
+    public function dataProvider(): array
     {
         $filter = [
             'collection' => [
@@ -127,7 +127,7 @@ abstract class AbstractDriverTest extends TestCase
 
     private function loadData(): void
     {
-        $schemaManager = $this->connection->getSchemaManager();
+        $schemaManager = $this->connection->createSchemaManager();
         $tableRegionExists = $schemaManager->tablesExist('country_language');
         $tableContinentExists = $schemaManager->tablesExist('country_language');
         $tableCityExists = $schemaManager->tablesExist('country_language');
@@ -143,19 +143,19 @@ abstract class AbstractDriverTest extends TestCase
 
         $dbPlatform = $this->connection->getDatabasePlatform();
         if ($tableCountryLanguageExists) {
-            $this->connection->exec($dbPlatform->getDropTableSQL('country_language'));
+            $this->connection->executeStatement($dbPlatform->getDropTableSQL('country_language'));
         }
         if ($tableCityExists) {
-            $this->connection->exec($dbPlatform->getDropTableSQL('city'));
+            $this->connection->executeStatement($dbPlatform->getDropTableSQL('city'));
         }
         if ($tableCountryExists) {
-            $this->connection->exec($dbPlatform->getDropTableSQL('country'));
+            $this->connection->executeStatement($dbPlatform->getDropTableSQL('country'));
         }
         if ($tableRegionExists) {
-            $this->connection->exec($dbPlatform->getDropTableSQL('region'));
+            $this->connection->executeStatement($dbPlatform->getDropTableSQL('region'));
         }
         if ($tableContinentExists) {
-            $this->connection->exec($dbPlatform->getDropTableSQL('continent'));
+            $this->connection->executeStatement($dbPlatform->getDropTableSQL('continent'));
         }
 
         $schema = new Schema();
@@ -197,8 +197,8 @@ abstract class AbstractDriverTest extends TestCase
         $tableCountry->addColumn('gnp_old', 'decimal', ['precision' => 10, 'scale' => 2, 'notnull' => false]);
         $tableCountry->addColumn('population', 'integer', ['unsigned' => true]);
         $tableCountry->addColumn('life_expectancy', 'decimal', ['precision' => 3, 'scale' => 1]);
-        $tableCountry->addColumn('local_name', 'string', ['length' => 255, 'nullable' => true]);
-        $tableCountry->addColumn('government_form', 'string', ['length' => 255, 'nullable' => true]);
+        $tableCountry->addColumn('local_name', 'string', ['length' => 255, 'notnull' => false]);
+        $tableCountry->addColumn('government_form', 'string', ['length' => 255, 'notnull' => false]);
         $tableCountry->addColumn('last_date', 'datetime');
         $tableCountry->addColumn('is_green', 'boolean', ['default' => false]);
 
@@ -221,7 +221,7 @@ abstract class AbstractDriverTest extends TestCase
         $queries = $schema->toSql($dbPlatform);
 
         foreach ($queries as $query) {
-            $this->connection->exec($query);
+            $this->connection->executeStatement($query);
         }
 
         $regions = $continents = $countries = $countryLanguages = $cities = [];
@@ -248,7 +248,7 @@ abstract class AbstractDriverTest extends TestCase
             $this->connection->insert('country_language', $countryLanguagesData);
         }
 
-        foreach ($this->connection->executeQuery(/** @lang text */ 'SELECT id, code FROM country')->fetchAll() as $country) {
+        foreach ($this->connection->executeQuery(/** @lang text */ 'SELECT id, code FROM country')->fetchAllAssociative() as $country) {
             $arr = explode(' ', $country['code']);
             if (!isset($arr[1]) or !$arr[1]) {
                 continue;

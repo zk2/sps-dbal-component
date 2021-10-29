@@ -87,14 +87,11 @@ abstract class AbstractSps
                 $this->queryBuilder->andWhere($where);
             }
         }
-        $this->queryBuilder->setParameters(
-            $this->condition->getParameters(),
-            array_map([$this, 'inferType'], $this->condition->getParameters())
-        );
+        $this->applyParameters();
         foreach ($this->sortCondition as $field => $direction) {
             $this->walkOrderBy($field, $direction);
         }
-        $data = $this->queryBuilder->setFirstResult($offset)->setMaxResults($itemsOnPage + 1)->execute()->fetchAll();
+        $data = $this->queryBuilder->setFirstResult($offset)->setMaxResults($itemsOnPage + 1)->fetchAllAssociative();
         $more = false;
         if (count($data) > $itemsOnPage) {
             $more = true;
@@ -130,9 +127,9 @@ abstract class AbstractSps
         $stmt = $this->queryBuilder->resetQueryParts()
             ->select('count(*)')
             ->from(sprintf('(%s)', $sql), '__sps_alias__')
-            ->execute();
+            ->executeQuery();
 
-        return  $stmt->fetchColumn();
+        return  $stmt->fetchOne();
     }
 
     /**
@@ -228,6 +225,18 @@ abstract class AbstractSps
         $where = $this->condition->buildWhere($forAlias);
 
         return $where ? $this->condition->trimAndOr($where) : null;
+    }
+
+    private function applyParameters(): void
+    {
+        $params = [];
+        foreach ($this->condition->getParameters() as $param => $value) {
+            $params[str_replace(':', '', $param)] = $value;
+        }
+        $this->queryBuilder->setParameters(
+            $params,
+            array_map([$this, 'inferType'], $params)
+        );
     }
 
     /**

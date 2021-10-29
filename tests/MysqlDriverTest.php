@@ -3,7 +3,7 @@
 namespace Tests;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\PDOMySql\Driver;
+use Doctrine\DBAL\Driver\PDO\MySQL\Driver;
 use Doctrine\DBAL\Query\QueryBuilder;
 
 class MysqlDriverTest extends AbstractDriverTest

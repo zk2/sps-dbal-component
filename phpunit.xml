@@ -1,25 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.2/phpunit.xsd"
-         bootstrap="tests/bootstrap.php"
-         executionOrder="depends,defects"
-         forceCoversAnnotation="false"
-         colors="true"
-         beStrictAboutCoversAnnotation="false"
-         beStrictAboutOutputDuringTests="false"
-         beStrictAboutTodoAnnotatedTests="false"
-         verbose="true">
-    <testsuites>
-        <testsuite name="default">
-            <file>./tests/PostgresDriverTest.php</file>
-            <file>./tests/MysqlDriverTest.php</file>
-            <file>./tests/SqliteDriverTest.php</file>
-        </testsuite>
-    </testsuites>
-
-    <filter>
-        <whitelist processUncoveredFilesFromWhitelist="true">
-            <directory suffix=".php">./src</directory>
-        </whitelist>
-    </filter>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd" bootstrap="tests/bootstrap.php" executionOrder="depends,defects" forceCoversAnnotation="false" colors="true" beStrictAboutCoversAnnotation="false" beStrictAboutOutputDuringTests="false" beStrictAboutTodoAnnotatedTests="false" verbose="true">
+  <coverage processUncoveredFiles="true">
+    <include>
+      <directory suffix=".php">./src</directory>
+    </include>
+  </coverage>
+  <testsuites>
+    <testsuite name="default">
+      <file>./tests/PostgresDriverTest.php</file>
+      <file>./tests/MysqlDriverTest.php</file>
+      <file>./tests/SqliteDriverTest.php</file>
+    </testsuite>
+  </testsuites>
 </phpunit>
