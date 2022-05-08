@@ -91,7 +91,7 @@ abstract class AbstractSps
         foreach ($this->sortCondition as $field => $direction) {
             $this->walkOrderBy($field, $direction);
         }
-        $data = $this->queryBuilder->setFirstResult($offset)->setMaxResults($itemsOnPage + 1)->fetchAllAssociative();
+        $data = $this->queryBuilder->setFirstResult($offset)->setMaxResults($itemsOnPage + 1)->executeQuery()->fetchAllAssociative();
         $more = false;
         if (count($data) > $itemsOnPage) {
             $more = true;
