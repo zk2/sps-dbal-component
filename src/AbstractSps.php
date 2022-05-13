@@ -131,8 +131,12 @@ abstract class AbstractSps
         $sql = $this->queryBuilder->resetQueryParts(['orderBy'])->setFirstResult(null)->setMaxResults(null)->getSQL();
         $stmt = $this->queryBuilder->resetQueryParts()
             ->select('count(*)')
-            ->from(sprintf('(%s)', $sql), '__sps_alias__')
-            ->executeQuery();
+            ->from(sprintf('(%s)', $sql), '__sps_alias__');
+        if (method_exists($this->queryBuilder, 'executeQuery')) {
+            $stmt->executeQuery();
+        } else {
+            $stmt->execute();
+        }
 
         return  $stmt->fetchOne();
     }
