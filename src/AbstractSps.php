@@ -133,12 +133,10 @@ abstract class AbstractSps
             ->select('count(*)')
             ->from(sprintf('(%s)', $sql), '__sps_alias__');
         if (method_exists($this->queryBuilder, 'executeQuery')) {
-            $stmt->executeQuery();
+            return $stmt->executeQuery()->fetchOne();
         } else {
-            $stmt->execute();
+            return $stmt->execute()->fetchOne();
         }
-
-        return  $stmt->fetchOne();
     }
 
     /**
