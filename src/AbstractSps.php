@@ -128,7 +128,7 @@ abstract class AbstractSps
 
     protected function getTotalCount(): int
     {
-        $sql = $this->queryBuilder->resetQueryParts(['orderBy'])->setFirstResult(null)->setMaxResults(null)->getSQL();
+        $sql = $this->queryBuilder->resetQueryParts(['orderBy'])->setFirstResult(0)->setMaxResults(null)->getSQL();
         $stmt = $this->queryBuilder->resetQueryParts()
             ->select('count(*)')
             ->from(sprintf('(%s)', $sql), '__sps_alias__');
