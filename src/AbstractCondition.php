@@ -81,7 +81,7 @@ abstract class AbstractCondition
 
     protected function setBoolOperator(?string $operator): self
     {
-        if ($operator = strtolower($operator)) {
+        if ($operator = strtolower($operator ?? '')) {
             if (!in_array($operator, ['and', 'or'])) {
                 throw new SpsException('Invalid operator. Use "and" or "or"');
             }
