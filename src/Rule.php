@@ -199,7 +199,7 @@ class Rule extends AbstractCondition implements RuleInterface
     private function setSqlFunction(?\Closure $sqlFunction): self
     {
         if (null !== $sqlFunction) {
-            $this->sqlFunctionBuilder = \Closure::bind($sqlFunction, $this, get_class());
+            $this->sqlFunctionBuilder = \Closure::bind($sqlFunction, $this, get_class($this));
         }
 
         return $this;

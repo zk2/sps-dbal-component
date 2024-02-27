@@ -11,10 +11,13 @@
 namespace Zk2\SpsDbalComponent;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
 
 abstract class AbstractSps
 {
+    protected const PLATFORMS = ['postgresql', 'mysql', 'mariadb', 'oracle', 'sqlite', 'sqlserver'];
+
     protected QueryBuilder $queryBuilder;
 
     protected AbstractCondition $condition;
@@ -31,12 +34,20 @@ abstract class AbstractSps
 
     protected array $lowerFields = []; // processing this fields by lower SQL function and strtolower PHP function
 
-    protected string $platformName;
+    protected ?string $platformName = null;
 
     public function __construct(Connection $connection)
     {
-        $this->platformName = $connection->getDatabasePlatform()->getName();
         $this->queryBuilder = $connection->createQueryBuilder();
+        if ($connection->getDatabasePlatform() instanceof AbstractPlatform) {
+            $platformClass = strtolower(get_class($connection->getDatabasePlatform()));
+            foreach (self::PLATFORMS as $platform) {
+                if (false !== stristr($platformClass, $platform)) {
+                    $this->platformName = $platform;
+                    break;
+                }
+            }
+        }
     }
 
     abstract public function initQueryBuilder(): self;
@@ -92,11 +103,8 @@ abstract class AbstractSps
             $this->walkOrderBy($field, $direction);
         }
         $this->queryBuilder->setFirstResult($offset)->setMaxResults($itemsOnPage + 1);
-        if (method_exists($this->queryBuilder, 'executeQuery')) {
-            $data = $this->queryBuilder->executeQuery()->fetchAllAssociative();
-        } else {
-            $data = $this->queryBuilder->execute()->fetchAllAssociative();
-        }
+        $executeMethod = method_exists($this->queryBuilder, 'executeQuery') ? 'executeQuery' : 'execute';
+        $data = $this->queryBuilder->$executeMethod()->fetchAllAssociative();
         $more = false;
         if (count($data) > $itemsOnPage) {
             $more = true;
@@ -132,11 +140,9 @@ abstract class AbstractSps
         $stmt = $this->queryBuilder->resetQueryParts()
             ->select('count(*)')
             ->from(sprintf('(%s)', $sql), '__sps_alias__');
-        if (method_exists($this->queryBuilder, 'executeQuery')) {
-            return $stmt->executeQuery()->fetchOne();
-        } else {
-            return $stmt->execute()->fetchOne();
-        }
+        $executeMethod = method_exists($stmt, 'executeQuery') ? 'executeQuery' : 'execute';
+
+        return $stmt->$executeMethod()->fetchOne();
     }
 
     /**
