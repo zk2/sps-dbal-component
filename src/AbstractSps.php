@@ -66,7 +66,7 @@ abstract class AbstractSps
 
     public function initSps(array $filters, array $sort = []): self
     {
-        if (strlen($this->queryBuilder->getSQL()) < 10) {
+        if (!count($this->selectFields)) {
             $this->initQueryBuilder();
         }
         foreach ($this->selectFields as $property) {
