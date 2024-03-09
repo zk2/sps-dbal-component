@@ -17,16 +17,17 @@
         }
     ],
     "require": {
-        "php": ">=7.4|^8.0",
+        "php": "^8.2",
         "ext-pdo": "*",
-        "doctrine/dbal": "^2.10|^3.0",
-        "doctrine/common": "^2.13|^3.0"
+        "doctrine/dbal": "^3.0",
+        "doctrine/common": "^3.0",
+        "doctrine/collections": "^2.0"
     },
     "require-dev": {
         "ext-json": "*",
-        "symfony/var-dumper": "^5.1",
-        "phpunit/phpunit": "^9.2",
-        "symfony/dotenv": "^5.1",
+        "symfony/var-dumper": "^6.4",
+        "phpunit/phpunit": "^9.5",
+        "symfony/dotenv": "^6.4",
         "monolog/monolog": "^2.1"
     },
     "autoload": {
@@ -39,7 +40,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/"
+            "Zk2\\Tests\\": "tests/"
         }
     }
 }

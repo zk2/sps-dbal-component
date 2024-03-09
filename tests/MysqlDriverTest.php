@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests;
+namespace Zk2\Tests;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver\PDO\MySQL\Driver;

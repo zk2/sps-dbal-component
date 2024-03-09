@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests;
+namespace Zk2\Tests;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver;
@@ -40,8 +40,8 @@ abstract class AbstractDriverTest extends TestCase
         }
 
         try {
-            $this->queryBuilder = new QueryBuilder(new Connection($this->config, $this->driver));
-            $this->connection = $this->queryBuilder->getConnection();
+            $this->connection = new Connection($this->config, $this->driver);
+            $this->queryBuilder = new QueryBuilder($this->connection);
             $this->logger = new MonologSQLLogger(static::LOG_FILE);
         } catch (\Exception $e) {
             $this->markTestSkipped('Skipped...'.PHP_EOL.$e->getMessage());
@@ -60,7 +60,7 @@ abstract class AbstractDriverTest extends TestCase
      */
     public function testQueryTest(array $filter, ?array $sort = null, int $page = 1, int $itemsOnPage = 50, ?bool $navigation = true, ?bool $totalCount = false)
     {
-        $sps = new SpsCountry($this->queryBuilder->getConnection());
+        $sps = new SpsCountry($this->connection);
         $data = $sps->initSps($filter, $sort)->getResult($page, $itemsOnPage, $navigation, $totalCount);
         $this->assertArrayHasKey('navigation', $data);
         $this->assertArrayHasKey('result', $data);

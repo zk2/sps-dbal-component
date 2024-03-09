@@ -1,5 +1,5 @@
 <?php
-namespace Tests;
+namespace Zk2\Tests;
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -17,7 +17,7 @@ class MonologSQLLogger implements SQLLogger
         $this->logger->pushHandler(new StreamHandler($fileName));
     }
 
-    public function startQuery($sql, array $params = null, array $types = null)
+    public function startQuery($sql, array $params = null, array $types = null): void
     {
         $this->logger->debug($sql);
 
@@ -32,7 +32,7 @@ class MonologSQLLogger implements SQLLogger
         $this->startTime = microtime(true);
     }
 
-    public function stopQuery()
+    public function stopQuery(): void
     {
         $ms = round(((microtime(true) - $this->startTime) * 1000));
         $this->logger->debug("Query took {$ms}ms.");

@@ -20,8 +20,7 @@ class Rule extends AbstractCondition implements RuleInterface
 
     private ?string $comparisonOperator = null;
 
-    /** @var mixed|null  */
-    private $value = null;
+    private mixed $value = null;
 
     private bool $isAggregated = false;
 
@@ -75,19 +74,15 @@ class Rule extends AbstractCondition implements RuleInterface
     public function prepareOperatorAndParameter(): string
     {
         $this->prepareValues();
-        switch ($this->comparisonOperator) {
-            case self::TOKEN_BETWEEN:
-            case self::TOKEN_NOT_BETWEEN:
-                return sprintf(' %s %s', $this->extractComparisonOperator(), implode(' AND ', array_keys($this->parameters)));
-            case self::TOKEN_IN:
-            case self::TOKEN_NOT_IN:
-                return sprintf(' %s(%s)', $this->extractComparisonOperator(), key($this->parameters));
-            case self::TOKEN_IS_NULL:
-            case self::TOKEN_IS_NOT_NULL:
-                return sprintf(' %s', $this->extractComparisonOperator());
-            default:
-                return sprintf(' %s %s', $this->extractComparisonOperator(), key($this->parameters));
-        }
+        return match ($this->comparisonOperator) {
+            self::TOKEN_BETWEEN,
+            self::TOKEN_NOT_BETWEEN => sprintf(' %s %s', $this->extractComparisonOperator(), implode(' AND ', array_keys($this->parameters))),
+            self::TOKEN_IN,
+            self::TOKEN_NOT_IN => sprintf(' %s(%s)', $this->extractComparisonOperator(), key($this->parameters)),
+            self::TOKEN_IS_NULL,
+            self::TOKEN_IS_NOT_NULL => sprintf(' %s', $this->extractComparisonOperator()),
+            default => sprintf(' %s %s', $this->extractComparisonOperator(), key($this->parameters)),
+        };
     }
 
     public function getComparisonOperator(): ?string
@@ -98,7 +93,7 @@ class Rule extends AbstractCondition implements RuleInterface
     /**
      * @return mixed|null
      */
-    public function getValue()
+    public function getValue(): mixed
     {
         return $this->value;
     }
@@ -113,7 +108,7 @@ class Rule extends AbstractCondition implements RuleInterface
         return self::COMPARISON_OPERATORS[$this->comparisonOperator];
     }
 
-    protected function init(array $data)
+    protected function init(array $data): void
     {
         $data = $data['condition'] ?? $data;
 

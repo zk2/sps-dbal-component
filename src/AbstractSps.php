@@ -10,6 +10,7 @@
 
 namespace Zk2\SpsDbalComponent;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -20,7 +21,11 @@ abstract class AbstractSps
 
     protected QueryBuilder $queryBuilder;
 
+    protected Connection $connection;
+
     protected AbstractCondition $condition;
+
+    protected array $selectFields = [];
 
     protected array $selectPart = []; // alias => expression
 
@@ -38,7 +43,8 @@ abstract class AbstractSps
 
     public function __construct(Connection $connection)
     {
-        $this->queryBuilder = $connection->createQueryBuilder();
+        $this->connection = $connection;
+        $this->queryBuilder = $this->connection->createQueryBuilder();
         if ($connection->getDatabasePlatform() instanceof AbstractPlatform) {
             $platformClass = strtolower(get_class($connection->getDatabasePlatform()));
             foreach (self::PLATFORMS as $platform) {
@@ -52,12 +58,18 @@ abstract class AbstractSps
 
     abstract public function initQueryBuilder(): self;
 
+    public function createQueryBuilder(): void
+    {
+        $this->queryBuilder = $this->connection->createQueryBuilder()
+            ->setParameters($this->queryBuilder->getParameters(), $this->queryBuilder->getParameterTypes());
+    }
+
     public function initSps(array $filters, array $sort = []): self
     {
-        if (!$this->queryBuilder->getQueryPart('select')) {
+        if (strlen($this->queryBuilder->getSQL()) < 10) {
             $this->initQueryBuilder();
         }
-        foreach ($this->queryBuilder->getQueryPart('select') as $property) {
+        foreach ($this->selectFields as $property) {
             $fieldAndAlias = AbstractCondition::extractFieldAndAlias($property);
             $this->selectPart[$fieldAndAlias['alias']] = $fieldAndAlias['field'];
         }
@@ -66,7 +78,7 @@ abstract class AbstractSps
             $this->allowedSortFields = array_keys($this->selectPart);
         }
         if (null === $this->allowedFilterFields) {
-            $this->allowedFilterFields = array_fill_keys(array_keys($this->selectPart), ['operators' => array_keys(Rule::COMPARISON_OPERATORS)]);
+            $this->allowedFilterFields = array_fill_keys(array_keys($this->selectPart), ['operators' => array_keys(RuleInterface::COMPARISON_OPERATORS)]);
         }
         $this->buildFilters($filters);
         $this->buildCondition($filters);
@@ -91,9 +103,9 @@ abstract class AbstractSps
         }
         if ($this->condition->isAggregated()) {
             $sql = $this->queryBuilder->getSQL();
-            $this->queryBuilder->resetQueryParts()
-                ->select('__sps_alias__.*')
-                ->from(sprintf('(%s)', $sql), '__sps_alias__');
+            $this->createQueryBuilder();
+            $this->queryBuilder->select('__sps_alias__.*')
+                ->from("($sql)", '__sps_alias__');
             if ($where = $this->getWhere(true)) {
                 $this->queryBuilder->andWhere($where);
             }
@@ -103,8 +115,7 @@ abstract class AbstractSps
             $this->walkOrderBy($field, $direction);
         }
         $this->queryBuilder->setFirstResult($offset)->setMaxResults($itemsOnPage + 1);
-        $executeMethod = method_exists($this->queryBuilder, 'executeQuery') ? 'executeQuery' : 'execute';
-        $data = $this->queryBuilder->$executeMethod()->fetchAllAssociative();
+        $data = $this->queryBuilder->executeQuery()->fetchAllAssociative();
         $more = false;
         if (count($data) > $itemsOnPage) {
             $more = true;
@@ -136,13 +147,12 @@ abstract class AbstractSps
 
     protected function getTotalCount(): int
     {
-        $sql = $this->queryBuilder->resetQueryParts(['orderBy'])->setFirstResult(0)->setMaxResults(null)->getSQL();
-        $stmt = $this->queryBuilder->resetQueryParts()
-            ->select('count(*)')
-            ->from(sprintf('(%s)', $sql), '__sps_alias__');
-        $executeMethod = method_exists($stmt, 'executeQuery') ? 'executeQuery' : 'execute';
+        $sql = $this->queryBuilder->add('orderBy', [])->setFirstResult(0)->setMaxResults(null)->getSQL();
+        $this->createQueryBuilder();
+        $stmt = $this->queryBuilder->select('count(*)')
+            ->from("($sql)", '__sps_alias__');
 
-        return $stmt->$executeMethod()->fetchOne();
+        return $stmt->executeQuery()->fetchOne();
     }
 
     /**
@@ -252,16 +262,7 @@ abstract class AbstractSps
         );
     }
 
-    /**
-     * Infers type of a given value, returning a compatible constant:
-     * - PDO (\PDO::PARAM*)
-     * - Connection (\Doctrine\DBAL\Connection::PARAM_*)
-     *
-     * @param mixed $value Parameter value.
-     *
-     * @return mixed Parameter type constant.
-     */
-    private function inferType($value)
+    private function inferType(mixed $value): int
     {
         if (is_integer($value)) {
             return \PDO::PARAM_INT;
@@ -273,8 +274,8 @@ abstract class AbstractSps
 
         if (is_array($value)) {
             return is_integer(current($value))
-                ? Connection::PARAM_INT_ARRAY
-                : Connection::PARAM_STR_ARRAY;
+                ?  ArrayParameterType::INTEGER
+                : ArrayParameterType::STRING;
         }
 
         return \PDO::PARAM_STR;

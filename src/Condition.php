@@ -15,7 +15,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 class Condition extends AbstractCondition
 {
     /** @var ArrayCollection|Rule[] */
-    private ArrayCollection $rules;
+    private ArrayCollection|array $rules;
 
     public function __construct(int $sequentialNumber, array $data)
     {
@@ -55,7 +55,7 @@ class Condition extends AbstractCondition
         return $parameters;
     }
 
-    protected function init(array $data)
+    protected function init(array $data): void
     {
         foreach ($data['collection'] as $key => $item) {
             if (is_array($item) && is_numeric($key)) {
