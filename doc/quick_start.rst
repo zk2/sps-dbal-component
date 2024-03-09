@@ -22,18 +22,17 @@ You need to make Sps class extends Zk2\SpsDbalComponent\AbstractSps:
         // !!! IMPORTANT !!! EACH field in SELECT part should be single element in array
         protected function initQueryBuilder(): QueryBuilder
         {
-            return $this->queryBuilder
-                ->resetQueryParts()
-                ->select(
-                [
-                    'country.id AS id',
-                    'country.name AS country_name',
-                    'continent.name AS continent_name',
-                    'region.name AS region_name',
-                    'capital.name AS capital_name',
-                    'COUNT(city.id) AS city_cnt',
-                ]
-            )
+            $this->selectFields = [
+                'country.id AS id',
+                'country.name AS country_name',
+                'continent.name AS continent_name',
+                'region.name AS region_name',
+                'capital.name AS capital_name',
+                'capital.last_date AS capital_last_date',
+                'COUNT(city.id) AS city_cnt',
+            ];
+            $this->queryBuilder
+                ->add('select', $this->selectFields)
                 ->from('country', 'country')
                 ->leftJoin('country', 'continent', 'continent', 'country.continent_id = continent.id')
                 ->leftJoin('country', 'region', 'region', 'country.region_id = region.id')
@@ -43,6 +42,8 @@ You need to make Sps class extends Zk2\SpsDbalComponent\AbstractSps:
                 ->addGroupBy('continent.id')
                 ->addGroupBy('region.id')
                 ->addGroupBy('capital.id');
+
+            return $this;
         }
     }
 
