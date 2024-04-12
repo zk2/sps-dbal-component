@@ -3,7 +3,6 @@
 namespace Zk2\Tests;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\PDO\PgSQL\Driver;
 use Doctrine\DBAL\Query\QueryBuilder;
 
 class PostgresDriverTest extends AbstractDriverTest
@@ -20,7 +19,6 @@ class PostgresDriverTest extends AbstractDriverTest
 
     protected function setUp(): void
     {
-        $this->driver = new Driver();
         $this->config = [
             'driver' => 'pdo_pgsql',
             'host' => 'pgsql',

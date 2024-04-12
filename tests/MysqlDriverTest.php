@@ -3,7 +3,6 @@
 namespace Zk2\Tests;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\PDO\MySQL\Driver;
 use Doctrine\DBAL\Query\QueryBuilder;
 
 class MysqlDriverTest extends AbstractDriverTest
@@ -20,7 +19,6 @@ class MysqlDriverTest extends AbstractDriverTest
 
     protected function setUp(): void
     {
-        $this->driver = new Driver();
         $this->config = [
             'driver' => 'pdo_mysql',
             'host' => 'mysql',

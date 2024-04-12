@@ -4,9 +4,12 @@ namespace Zk2\Tests;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver;
+use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\DBAL\Schema\Schema;
+use Doctrine\DBAL\Configuration;
 use PHPUnit\Framework\TestCase;
+use Firehed\DbalLogger\Middleware;
 
 abstract class AbstractDriverTest extends TestCase
 {
@@ -16,13 +19,9 @@ abstract class AbstractDriverTest extends TestCase
 
     protected ?QueryBuilder $queryBuilder = null;
 
-    protected ?MonologSQLLogger $logger;
-
     protected array $config = [];
 
     protected bool $reloadAllData = false;
-
-    protected Driver $driver;
 
     protected int $debug = 0;
 
@@ -40,14 +39,15 @@ abstract class AbstractDriverTest extends TestCase
         }
 
         try {
-            $this->connection = new Connection($this->config, $this->driver);
+            $conf = new Configuration();
+            $logger = new MonologSQLLogger(static::LOG_FILE);
+            $conf->setMiddlewares([new Middleware($logger)]);
+            $this->connection = DriverManager::getConnection($this->config, $conf);
             $this->queryBuilder = new QueryBuilder($this->connection);
-            $this->logger = new MonologSQLLogger(static::LOG_FILE);
         } catch (\Exception $e) {
             $this->markTestSkipped('Skipped...'.PHP_EOL.$e->getMessage());
         }
         $this->loadData();
-        $this->connection->getConfiguration()->setSQLLogger($this->logger);
     }
 
     public function testConnectionTest()

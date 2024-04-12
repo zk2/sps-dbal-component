@@ -3,7 +3,6 @@
 namespace Zk2\Tests;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\PDO\SQLite\Driver;
 use Doctrine\DBAL\Query\QueryBuilder;
 
 class SqliteDriverTest extends AbstractDriverTest
@@ -20,7 +19,6 @@ class SqliteDriverTest extends AbstractDriverTest
 
     protected function setUp(): void
     {
-        $this->driver = new Driver();
         $this->config = [
             'driver' => 'pdo_sqlite',
             'memory' => true,

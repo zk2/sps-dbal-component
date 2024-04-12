@@ -3,9 +3,9 @@ namespace Zk2\Tests;
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
-use Doctrine\DBAL\Logging\SQLLogger;
+use Firehed\DbalLogger\QueryLogger;
 
-class MonologSQLLogger implements SQLLogger
+class MonologSQLLogger implements QueryLogger
 {
     private ?Logger $logger;
     
